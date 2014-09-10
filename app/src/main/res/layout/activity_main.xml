@@ -30,9 +30,25 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Drive!"
+        android:text="Connect"
         android:id="@+id/start"
         android:layout_below="@+id/action"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Take pic!"
+        android:id="@+id/picButton"
+        android:layout_below="@+id/start"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:src="@drawable/ic_launcher"
+        android:layout_below="@+id/picButton"
         android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

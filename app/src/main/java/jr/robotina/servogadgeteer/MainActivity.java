@@ -9,12 +9,14 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.Set;
@@ -32,6 +34,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothThread mThread;
     private BluetoothDevice mPairedDevice;
+    private ImageView mImageView;
+    private Handler mImageHandler;
 
 
     @Override
@@ -42,6 +46,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         senSensorManager = (SensorManager) getSystemService(this.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+        mImageView = (ImageView)findViewById(R.id.imageView);
+        mImageHandler = new Handler();
+        init();
+    }
+
+    private void init() {
         ((Button)findViewById(R.id.start)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -53,15 +63,24 @@ public class MainActivity extends Activity implements SensorEventListener {
                     ((Button)findViewById(R.id.start)).setText("Drive!");
                     finishMethod();
                 }
+            }
+        });
 
+        ((Button)findViewById(R.id.picButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mPairedDevice != null && mThread != null && mThread.connected) {
+                    Log.d("SPEED", "Request picture");
+                    mThread.sendData("takePicture");
+                }
             }
         });
     }
 
-   private void finishMethod() {
-       if(mThread != null)
-           mThread.closeConnection();
-   }
+    private void finishMethod() {
+        if(mThread != null)
+            mThread.closeConnection();
+    }
 
     private boolean startMethod(){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -85,7 +104,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             Toast.makeText(this,"Thread Start",Toast.LENGTH_SHORT).show();
 
-            mThread = new BluetoothThread(mPairedDevice);
+            mThread = new BluetoothThread(mPairedDevice, mImageHandler, mImageView);
             mThread.start();
             return true;
         }
@@ -93,8 +112,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             Toast.makeText(this,"No paired devices",Toast.LENGTH_SHORT).show();
             return false;
         }
-
-
     }
 
     private void sendData(double speedL, double speedR, String dir) {
@@ -108,7 +125,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             speedL = Math.min(Math.max(speedL, -MAX_SPEED), MAX_SPEED);
             speedR = Math.min(Math.max(speedR, -MAX_SPEED), MAX_SPEED);
         }
-
         if (mPairedDevice != null && mThread != null && mThread.connected) {
             Log.d("SPEED", (int) speedL + ";" + (int) speedR);
             mThread.sendData((int) speedL + ";" + (int) speedR);
