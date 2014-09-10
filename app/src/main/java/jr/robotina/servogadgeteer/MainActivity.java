@@ -4,12 +4,18 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.support.v4.app.ShareCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +25,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.plus.PlusShare;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Set;
 
 public class MainActivity extends Activity implements SensorEventListener {
@@ -70,8 +82,37 @@ public class MainActivity extends Activity implements SensorEventListener {
             @Override
             public void onClick(View view) {
                 if (mPairedDevice != null && mThread != null && mThread.connected) {
-                    Log.d("SPEED", "Request picture");
+                    Log.d("PICTURE", "Request picture");
                     mThread.sendData("takePicture");
+                    Log.d("PICTURE", "Take Picture!");
+                }
+            }
+        });
+
+        findViewById(R.id.shareButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Bitmap bmp = ((BitmapDrawable) mImageView.getDrawable()).getBitmap();
+                File f = new File(Environment.getExternalStorageDirectory() + File.separator + "iic3380.jpg");
+                try {
+                    f.createNewFile();
+                    FileOutputStream fo = new FileOutputStream(f);
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 85, fo);
+                    fo.flush();
+                    fo.close();
+                    String photoUri = MediaStore.Images.Media.insertImage(
+                            getContentResolver(), f.getAbsolutePath(), null, null);
+                    Log.d("",Uri.parse(photoUri).toString());
+                    Intent shareIntent = ShareCompat.IntentBuilder.from(MainActivity.this)
+                            //.setType(MainActivity.this.getContentResolver().getType(Uri.parse("file:///sdcard/iic3380.jpg")))
+                            .setType("image/jpeg")
+                            .setText("IIC3380 - ServoTest")
+                            .addStream(Uri.parse(photoUri))
+                            .getIntent()
+                            .setPackage("com.google.android.apps.plus");
+                    MainActivity.this.startActivity(shareIntent);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -104,7 +145,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             Toast.makeText(this,"Thread Start",Toast.LENGTH_SHORT).show();
 
-            mThread = new BluetoothThread(mPairedDevice, mImageHandler, mImageView);
+            mThread = new BluetoothThread(mPairedDevice, mImageHandler, mImageView, this);
             mThread.start();
             return true;
         }
